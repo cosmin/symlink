@@ -3,13 +3,46 @@
 usage() {
 cat<<EOF
 
-Usage: symlink <file> <file>
+Usage: symlink <path> <path>
 
 symlink intelligently figures out which way to create a symlink based
-on which file currently exists and which one does not. Therefore one,
-and only one of the files you specified should exist.
+on which file currently exists and which one does not. If both paths
+exists but one is a file and the other a directory it will also know
+what you meant. If both paths are files or both are directories
+symlink cannot read your mind and gives up.
 
 EOF
+}
+
+ln_with_notice() {
+    (ln -s $1 $2 && echo "Created symlink $2 => $1" && exit 0) || echo "Could not create symlink. Check output of ln above"
+    exit 10
+}
+
+handle_both_exist() {
+    first=$1
+    second=$2
+
+    echo $first
+    echo $second
+
+    if [ -f $first ]; then
+        if [ -d $second ]; then
+            ln_with_notice $first $second/$(basename $first)
+        fi
+    fi
+
+    if [ -f $second ]; then
+        if [ -d $first ]; then
+            ln_with_notice $second $first/$(basename $second)
+        fi
+    fi
+
+    echo "ERROR: Both of the files you specified currently exist."
+    echo "       If one was a file and one was a directory I could help you, "
+    echo "       but as it stands you are shit out of luck."
+    usage
+    exit 3
 }
 
 file1=$1
@@ -27,19 +60,13 @@ fi
 
 if [ -e $file1 ]; then
     if [ -e $file2 ]; then
-        echo "ERROR: Both of the files you specified currently exist. I can't help you."
-        usage
-        exit 3
+        handle_both_exist $file1 $file2
     else
-        ln -s $file1 $file2
-        echo "Created symlink $file2 => $file1"
-        exit 0
+        ln_with_notice $file1 $file2
     fi
 else
     if [ -e $file2 ]; then
-        ln -s $file2 $file1
-        echo "Created symlink $file1 => $file2"
-        exit 0
+        ln_with_notice $file2 $file1
     else
         echo "ERROR: Neither of the files you specified currently exist. I can't help you."
         usage
