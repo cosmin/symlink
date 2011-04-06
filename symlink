@@ -1,0 +1,48 @@
+#!/bin/sh
+
+usage() {
+cat<<EOF
+
+Usage: symlink <file> <file>
+
+symlink intelligently figures out which way to create a symlink based
+on which file currently exists and which one does not. Therefore one,
+and only one of the files you specified should exist.
+
+EOF
+}
+
+file1=$1
+file2=$2
+
+if [ -z "$file1" ]; then
+    usage
+    exit 1
+fi
+
+if [ -z "$file2" ]; then
+    usage
+    exit 2
+fi
+
+if [ -e $file1 ]; then
+    if [ -e $file2 ]; then
+        echo "ERROR: Both of the files you specified currently exist. I can't help you."
+        usage
+        exit 3
+    else
+        ln -s $file1 $file2
+        echo "Created symlink $file2 => $file1"
+        exit 0
+    fi
+else
+    if [ -e $file2 ]; then
+        ln -s $file2 $file1
+        echo "Created symlink $file1 => $file2"
+        exit 0
+    else
+        echo "ERROR: Neither of the files you specified currently exist. I can't help you."
+        usage
+        exit 4
+    fi
+fi
